@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>池海平 — Frontend Engineer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500&family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
+
+  <style>
+    :root {
+      --bg: #111318;
+      --surface: #181b22;
+      --surface2: #1d2029;
+      --border: #272c38;
+      --border-light: #323848;
+      --text: #e8ecf4;
+      --text-muted: #8b93a8;
+      --text-dim: #464e62;
+      --accent: #4af0c4;
+      --accent-dim: rgba(74, 240, 196, 0.1);
+      --mono: 'JetBrains Mono', monospace;
+      --sans: 'Syne', sans-serif;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 14px;
+      line-height: 1.75;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(var(--border) 1px, transparent 1px),
+        linear-gradient(90deg, var(--border) 1px, transparent 1px);
+      background-size: 48px 48px;
+      opacity: 0.18;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .wrapper {
+      position: relative;
+      z-index: 1;
+      max-width: 1120px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 220px 1fr;
+      grid-template-rows: auto 1fr;
+      min-height: 100vh;
+    }
+
+    /* ── HEADER ── */
+    .header {
+      grid-column: 1 / -1;
+      padding: 52px 48px 36px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .name {
+      font-family: var(--sans);
+      font-size: clamp(40px, 5vw, 64px);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1;
+      color: var(--text);
+      opacity: 0;
+      transform: translateY(-10px);
+      /* ① 标题：0.1s 出 */
+      animation: fadeSlideDown 0.6s ease 0.1s forwards;
+    }
+    .name span { color: var(--accent); }
+
+    .title-line {
+      margin-top: 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--text-muted);
+      font-size: 12px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      opacity: 0;
+      /* ① 副标题：与标题同步，0.15s 出 */
+      animation: fadeIn 0.5s ease 0.15s forwards;
+    }
+    .title-line::before {
+      content: '';
+      display: inline-block;
+      width: 20px;
+      height: 1px;
+      background: var(--accent);
+    }
+
+    .header-right {
+      text-align: right;
+      opacity: 0;
+      transform: translateX(28px);
+      /* ② 右侧联系信息：0.6s 出 */
+      animation: slideFromRight 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.6s forwards;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--accent-dim);
+      border: 1px solid rgba(74, 240, 196, 0.22);
+      color: var(--accent);
+      font-size: 11px;
+      padding: 5px 12px;
+      letter-spacing: 0.08em;
+      margin-bottom: 10px;
+    }
+    .badge::before {
+      content: '';
+      width: 6px; height: 6px;
+      background: var(--accent);
+      border-radius: 50%;
+      animation: pulse 2s ease infinite;
+    }
+
+    .contact-lines { color: var(--text-muted); font-size: 13px; line-height: 2.1; }
+    .contact-lines a { color: var(--text-muted); text-decoration: none; transition: color 0.2s; }
+    .contact-lines a:hover { color: var(--accent); }
+
+    /* ── SIDEBAR ── */
+    .sidebar {
+      padding: 32px 28px 48px;
+      border-right: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+      opacity: 0;
+      /* ③ 与 advantage 同步：1.0s 出 */
+      animation: fadeIn 0.6s ease 1.0s forwards;
+    }
+    .sidebar::-webkit-scrollbar { width: 0; }
+
+    .nav-label {
+      font-size: 10px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 14px;
+      margin-top: 28px;
+    }
+    .nav-label:first-child { margin-top: 0; }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 7px 0;
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 13px;
+      transition: color 0.2s;
+      cursor: pointer;
+    }
+    .nav-item::before {
+      content: '';
+      width: 14px; height: 1px;
+      background: currentColor;
+      transition: width 0.25s;
+      flex-shrink: 0;
+    }
+    .nav-item:hover, .nav-item.active { color: var(--accent); }
+    .nav-item:hover::before, .nav-item.active::before { width: 24px; }
+
+    .sidebar-meta { margin-top: 36px; padding-top: 20px; border-top: 1px solid var(--border); }
+    .meta-row { display: flex; gap: 8px; color: var(--text-muted); font-size: 12px; padding: 4px 0; }
+    .meta-key { color: var(--text-dim); width: 56px; flex-shrink: 0; }
+
+    /* ── MAIN ── */
+    .main { padding: 44px 48px 80px; }
+
+    /* ── SECTION base ── */
+    .section {
+      margin-bottom: 60px;
+      opacity: 0;
+      transform: translateY(18px);
+      transition: opacity 0.55s ease, transform 0.55s ease;
+    }
+    .section.visible { opacity: 1; transform: translateY(0); }
+
+    /* advantage section slides from right, triggered by JS at 1.0s */
+    #advantage {
+      transform: translateX(32px);
+      transition: opacity 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94), transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    }
+    #advantage.visible { opacity: 1; transform: translateX(0); }
+
+    .section-header {
+      display: flex;
+      align-items: baseline;
+      gap: 14px;
+      margin-bottom: 26px;
+    }
+    .section-num { font-size: 11px; color: var(--accent); letter-spacing: 0.1em; opacity: 0.6; }
+    .section-title { font-family: var(--sans); font-size: 19px; font-weight: 700; letter-spacing: -0.01em; color: var(--text); }
+    .section-line { flex: 1; height: 1px; background: var(--border); }
+
+    /* ── ADVANTAGE CARDS ── */
+    .advantage-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+    .adv-card {
+      border: 1px solid var(--border);
+      padding: 20px 22px;
+      background: var(--surface);
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .adv-card:hover { border-color: var(--border-light); background: var(--surface2); }
+    .adv-icon { font-size: 10px; color: var(--accent); letter-spacing: 0.1em; margin-bottom: 8px; opacity: 0.75; }
+    .adv-text { color: var(--text-muted); font-size: 13px; line-height: 1.85; }
+    .adv-text strong { color: var(--text); font-weight: 500; }
+
+    /* ── D3 TIMELINE ── */
+    .d3-timeline-wrap {
+      margin-bottom: 36px;
+      padding: 20px 0 4px;
+      border-bottom: 1px solid var(--border);
+    }
+    .d3-timeline-label {
+      font-size: 10px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 14px;
+    }
+    #d3-timeline svg { display: block; overflow: visible; }
+
+    /* ── VERTICAL TIMELINE / JOBS ── */
+    .timeline {
+      position: relative;
+      padding-left: 28px;
+    }
+    .timeline::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 8px; bottom: 0;
+      width: 1px;
+      background: var(--border);
+      transform-origin: top;
+      transform: scaleY(0);
+      transition: transform 2.8s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .timeline.draw::before { transform: scaleY(1); }
+
+    .job { margin-bottom: 40px; position: relative; }
+    .job::before {
+      content: '';
+      position: absolute;
+      left: -32px; top: 7px;
+      width: 7px; height: 7px;
+      border: 1px solid var(--accent);
+      background: var(--bg);
+      opacity: 0;
+      transition: opacity 0.4s ease;
+    }
+    .timeline.draw .job::before { opacity: 1; }
+    .job:nth-child(1)::before { transition-delay: 0.3s; }
+    .job:nth-child(2)::before { transition-delay: 0.9s; }
+    .job:nth-child(3)::before { transition-delay: 1.6s; }
+    .job:nth-child(4)::before { transition-delay: 2.2s; }
+
+    .job-header { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 2px; }
+    .job-company { font-family: var(--sans); font-size: 16px; font-weight: 700; color: var(--text); letter-spacing: -0.01em; }
+    .job-period { font-size: 12px; color: var(--text-muted); letter-spacing: 0.04em; }
+    .job-role { font-size: 11px; color: var(--accent); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 14px; opacity: 0.8; }
+    .job-section-label { font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-dim); margin: 14px 0 8px; }
+
+    .list { list-style: none; display: flex; flex-direction: column; gap: 7px; }
+    .list li { color: var(--text-muted); font-size: 13.5px; line-height: 1.8; padding-left: 18px; position: relative; }
+    .list li::before { content: '—'; position: absolute; left: 0; color: var(--text-dim); }
+    .list li strong { color: var(--text); font-weight: 500; }
+
+    /* ── SKILLS ── */
+    .skill-group { margin-bottom: 20px; }
+    .skill-group-label { font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 10px; }
+    .skill-tags { display: flex; flex-wrap: wrap; gap: 8px; }
+    .tag {
+      font-size: 12.5px;
+      padding: 5px 13px;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      background: var(--surface);
+      letter-spacing: 0.02em;
+      transition: all 0.2s;
+      cursor: default;
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    .tag.visible { opacity: 1; transform: translateY(0); }
+    .tag:hover { border-color: rgba(74,240,196,0.3); color: var(--accent); background: var(--accent-dim); }
+    .tag.highlight { border-color: rgba(74,240,196,0.25); color: var(--accent); background: var(--accent-dim); }
+
+    /* ── EDUCATION ── */
+    .edu-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .edu-card { border: 1px solid var(--border); padding: 18px 20px; background: var(--surface); }
+    .edu-school { font-family: var(--sans); font-weight: 700; font-size: 15px; color: var(--text); margin-bottom: 4px; }
+    .edu-detail { font-size: 12.5px; color: var(--text-muted); line-height: 2; }
+
+    /* ── KEYFRAMES ── */
+    @keyframes fadeIn { to { opacity: 1; } }
+    @keyframes fadeSlideDown { to { opacity: 1; transform: translateY(0); } }
+    @keyframes slideFromRight { to { opacity: 1; transform: translateX(0); } }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border-light); }
+
+    @media (max-width: 768px) {
+      .wrapper { grid-template-columns: 1fr; }
+      .header { padding: 28px 20px 24px; flex-direction: column; align-items: flex-start; }
+      .header-right { text-align: left; }
+      .sidebar {
+        position: static; height: auto; padding: 16px 20px;
+        border-right: none; border-bottom: 1px solid var(--border);
+        display: flex; flex-wrap: wrap; gap: 4px 16px;
+        opacity: 1; animation: none;
+      }
+      .nav-label, .sidebar-meta { display: none; }
+      .main { padding: 28px 20px 60px; }
+      .advantage-grid, .edu-row { grid-template-columns: 1fr; }
+      .name { opacity: 1; transform: none; animation: none; }
+      #advantage { transform: none; }
+    }
+  </style>
+</head>
+<body>
+<div class="wrapper">
+
+  <!-- HEADER -->
+  <header class="header">
+    <div class="header-left">
+      <h1 class="name">池<span>海</span>平</h1>
+      <div class="title-line">Senior Frontend Engineer &nbsp;·&nbsp; 14 yrs exp</div>
+    </div>
+    <div class="header-right">
+      <div><div class="badge">OPEN TO WORK</div></div>
+      <div class="contact-lines">
+        <div>166 0124 3564</div>
+        <div><a href="mailto:lucasbollute@sina.com">lucasbollute@sina.com</a></div>
+        <div>求职意向：Web 前端 &nbsp;·&nbsp; 北京</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="nav-label">// sections</div>
+    <a class="nav-item active" href="#advantage">个人优势</a>
+    <a class="nav-item" href="#work">工作经历</a>
+    <a class="nav-item" href="#skills">技术栈</a>
+    <a class="nav-item" href="#education">教育背景</a>
+    <div class="sidebar-meta">
+      <div class="nav-label">// meta</div>
+      <div class="meta-row"><span class="meta-key">经验</span>14 年</div>
+      <div class="meta-row"><span class="meta-key">城市</span>北京</div>
+      <div class="meta-row"><span class="meta-key">状态</span><span style="color:var(--accent)">求职中</span></div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- 个人优势 -->
+    <section class="section" id="advantage">
+      <div class="section-header">
+        <span class="section-num">01</span>
+        <h2 class="section-title">个人优势</h2>
+        <div class="section-line"></div>
+      </div>
+      <div class="advantage-grid">
+        <div class="adv-card">
+          <div class="adv-icon">// TECHNICAL</div>
+          <div class="adv-text"><strong>14 年全栈前端经验</strong>，覆盖 PC、H5、动态化、Node 中台等多端场景，熟悉现代工程化体系，具备从 0 到 1 建设大型前端项目的完整能力。</div>
+        </div>
+        <div class="adv-card">
+          <div class="adv-icon">// AI + ENGINEERING</div>
+          <div class="adv-text">主导 <strong>AI Auto Coding</strong> 在数据中台的落地闭环，通过知识库补充、测试用例驱动与 Playwright 验证，实现 AI 辅助开发流程的可用性与可推广性。</div>
+        </div>
+        <div class="adv-card">
+          <div class="adv-icon">// ARCHITECTURE</div>
+          <div class="adv-text">具备组件库从零搭建经验，独立完成 <strong>80%+ 通用组件</strong>开发；主导多次大型系统重构，兼顾技术选型、架构设计与核心模块落地。</div>
+        </div>
+        <div class="adv-card">
+          <div class="adv-icon">// COLLABORATION</div>
+          <div class="adv-text">跨团队沟通协调能力强，善于对齐产品、设计、后台多方资源，<strong>快速定位项目卡点</strong>，稳步推动需求落地交付。</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 工作经历 -->
+    <section class="section" id="work">
+      <div class="section-header">
+        <span class="section-num">02</span>
+        <h2 class="section-title">工作经历</h2>
+        <div class="section-line"></div>
+      </div>
+
+      <!-- D3 横向时间轴 -->
+      <div class="d3-timeline-wrap">
+        <div class="d3-timeline-label">// career timeline</div>
+        <div id="d3-timeline"></div>
+      </div>
+
+      <!-- 竖向详情 -->
+      <div class="timeline" id="timeline">
+        <div class="job">
+          <div class="job-header">
+            <span class="job-company">腾讯</span>
+            <span class="job-period">2019.06 — 至今</span>
+          </div>
+          <div class="job-role">Senior Frontend Engineer · AData 数据中台</div>
+          <div class="job-section-label">// 工作内容</div>
+          <ul class="list">
+            <li>探索 <strong>AI Auto Coding</strong> 在 AData 数据中台前端的提效应用，推动开发流程优化。</li>
+            <li>参与 AI 数据处理与分析应用开发，负责<strong>垂类数据 Agent 前端交互</strong>及 ChatBI 新版功能改造。</li>
+            <li>负责 AData 数据中台日常迭代，以及微信广告 / 搜索广告看数中台的维护与演进。</li>
+            <li>负责搜索场景下竞价 / 品牌广告播放端形态的前端开发，与产品、后台团队紧密协同。</li>
+            <li>完成 WX 场景主落地页<strong>动态化改造</strong>，实现页面内容灵活配置与快速上线。</li>
+          </ul>
+          <div class="job-section-label">// 核心成果</div>
+          <ul class="list">
+            <li>通过知识库补充、代码重构、Playwright 自动化测试等手段，完成 AI Auto Coding 在 AData 前端的<strong>闭环验证</strong>，小范围开始推广使用。</li>
+            <li>主导 <strong>ChatBI 独立版</strong>开发，产出基础组件 10+、业务组件 5+，为插件版与移动版提供快速开发支持。</li>
+            <li>完成 AData 前端工具链升级，提升项目启动速度与开发体验，<strong>获公司自主提效奖</strong>。</li>
+          </ul>
+        </div>
+
+        <div class="job">
+          <div class="job-header">
+            <span class="job-company">新浪微博</span>
+            <span class="job-period">2017.07 — 2019.06</span>
+          </div>
+          <div class="job-role">Frontend Engineer · 广告平台</div>
+          <div class="job-section-label">// 工作内容</div>
+          <ul class="list">
+            <li>负责超级粉丝通（BP）后台系统前端开发，保障业务高效迭代与稳定运行。</li>
+            <li>参与热门话题、品牌广告系统开发与维护，持续优化性能与用户体验。</li>
+            <li>主导前端技术栈升级，完成 <strong>jQuery → Vue 平滑迁移</strong>，显著提升开发效率与代码可维护性。</li>
+            <li>主导品牌广告系统重构，从技术选型到核心模块编码全程把控。</li>
+          </ul>
+          <div class="job-section-label">// 核心成果</div>
+          <ul class="list">
+            <li>从零搭建微博广告平台 <strong>前端 UI 组件库</strong>，独立完成 80%+ 通用组件，服务全平台多团队，统一设计规范。</li>
+            <li>参与多个广告投放系统重构，显著优化运营人员的使用体验与工作效率。</li>
+          </ul>
+        </div>
+
+        <div class="job">
+          <div class="job-header">
+            <span class="job-company">美团网</span>
+            <span class="job-period">2016.12 — 2017.07</span>
+          </div>
+          <div class="job-role">Frontend Engineer · 配送 &amp; 外卖</div>
+          <ul class="list">
+            <li>负责配送烽火台前端开发与日常维护。</li>
+            <li>承担外卖 C 端及 R 端 H5 页面开发。</li>
+            <li>参与智能配送数据可视化前端开发。</li>
+            <li>参与前端组件库建设与维护。</li>
+          </ul>
+        </div>
+
+        <div class="job">
+          <div class="job-header">
+            <span class="job-company">大连东软集团</span>
+            <span class="job-period">2012.07 — 2016.10</span>
+          </div>
+          <div class="job-role">Java Web Developer</div>
+          <ul class="list">
+            <li>参与南通市人力资源管理系统开发，负责个人信息维护、文档管理等核心模块。</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- 技术栈 -->
+    <section class="section" id="skills">
+      <div class="section-header">
+        <span class="section-num">03</span>
+        <h2 class="section-title">技术栈</h2>
+        <div class="section-line"></div>
+      </div>
+      <div class="skill-group">
+        <div class="skill-group-label">// Core Languages</div>
+        <div class="skill-tags">
+          <span class="tag highlight">JavaScript</span>
+          <span class="tag highlight">TypeScript</span>
+          <span class="tag">HTML5</span><span class="tag">CSS3</span><span class="tag">Node.js</span>
+        </div>
+      </div>
+      <div class="skill-group">
+        <div class="skill-group-label">// Frameworks &amp; Libraries</div>
+        <div class="skill-tags">
+          <span class="tag highlight">Vue 2/3</span>
+          <span class="tag highlight">React</span>
+          <span class="tag highlight">Pinia / Vuex</span>
+          <span class="tag highlight">React Hooks</span>
+          <span class="tag">Vite</span><span class="tag">Webpack</span>
+        </div>
+      </div>
+      <div class="skill-group">
+        <div class="skill-group-label">// Mobile &amp; Cross-platform</div>
+        <div class="skill-tags">
+          <span class="tag">H5</span><span class="tag">动态化</span>
+          <span class="tag">微信小程序</span><span class="tag">响应式布局</span>
+        </div>
+      </div>
+      <div class="skill-group">
+        <div class="skill-group-label">// AI &amp; Testing</div>
+        <div class="skill-tags">
+          <span class="tag highlight">AI Auto Coding</span>
+          <span class="tag">Playwright</span><span class="tag">Jest</span><span class="tag">Vitest</span>
+        </div>
+      </div>
+      <div class="skill-group">
+        <div class="skill-group-label">// Tools &amp; Infra</div>
+        <div class="skill-tags">
+          <span class="tag">Git</span><span class="tag">CI/CD</span>
+          <span class="tag">Docker</span><span class="tag">Figma</span><span class="tag">D3.js</span><span class="tag">组件库搭建</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- 教育背景 -->
+    <section class="section" id="education">
+      <div class="section-header">
+        <span class="section-num">04</span>
+        <h2 class="section-title">教育背景</h2>
+        <div class="section-line"></div>
+      </div>
+      <div class="edu-row">
+        <div class="edu-card">
+          <div class="edu-school">内蒙古工业大学</div>
+          <div class="edu-detail">本科 · 计算机科学与技术<br/>2008 — 2012</div>
+        </div>
+        <div class="edu-card" style="display:flex;align-items:center;background:transparent;">
+          <div class="edu-detail" style="color:var(--text-dim);font-size:11px;letter-spacing:0.07em;line-height:2;">
+            // 持续学习中<br/>AI Engineering · Frontend Architecture
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script>
+  // ─────────────────────────────────────────────
+  // D3 横向职业时间轴
+  // ─────────────────────────────────────────────
+  const jobs = [
+    { company: '东软', role: 'Java Dev',     start: new Date('2012-07-01'), end: new Date('2016-10-01'), color: '#464e62' },
+    { company: '美团', role: 'Frontend',     start: new Date('2016-12-01'), end: new Date('2017-07-01'), color: '#5a6478' },
+    { company: '微博', role: 'Frontend',     start: new Date('2017-07-01'), end: new Date('2019-06-01'), color: '#8b93a8' },
+    { company: '腾讯', role: 'Sr. Frontend', start: new Date('2019-06-01'), end: new Date(),             color: '#4af0c4' },
+  ];
+
+  function drawD3Timeline() {
+    const container = document.getElementById('d3-timeline');
+    const W = container.clientWidth || 600;
+    const H = 72, marginX = 8, barH = 26, barY = 20;
+    const x = d3.scaleTime()
+      .domain([new Date('2012-01-01'), new Date('2027-01-01')])
+      .range([marginX, W - marginX]);
+
+    const svg = d3.select('#d3-timeline').append('svg').attr('width', W).attr('height', H);
+
+    // axis
+    svg.append('g')
+      .attr('transform', `translate(0,${barY + barH + 6})`)
+      .call(
+        d3.axisBottom(x)
+          .ticks(d3.timeYear.every(2))
+          .tickFormat(d3.timeFormat('%Y'))
+          .tickSize(4)
+      )
+      .call(g => {
+        g.select('.domain').attr('stroke', '#272c38');
+        g.selectAll('.tick line').attr('stroke', '#272c38');
+        g.selectAll('.tick text')
+          .attr('fill', '#464e62')
+          .attr('font-family', "'JetBrains Mono', monospace")
+          .attr('font-size', '10px');
+      });
+
+    // bars
+    const groups = svg.selectAll('.job-bar').data(jobs).enter().append('g').attr('class', 'job-bar');
+
+    groups.append('rect')
+      .attr('x', d => x(d.start))
+      .attr('y', barY)
+      .attr('width', 0)
+      .attr('height', barH)
+      .attr('fill', d => d.color)
+      .attr('opacity', d => d.company === '腾讯' ? 0.9 : 0.38)
+      .attr('rx', 2)
+      .transition().duration(1000).delay((_, i) => i * 180).ease(d3.easeCubicOut)
+      .attr('width', d => Math.max(x(d.end) - x(d.start) - 2, 0));
+
+    groups.append('text')
+      .attr('x', d => x(d.start) + 7)
+      .attr('y', barY + barH / 2 + 1)
+      .attr('dominant-baseline', 'middle')
+      .attr('fill', d => d.company === '腾讯' ? '#111318' : '#8b93a8')
+      .attr('font-family', "'Syne', sans-serif")
+      .attr('font-size', '11px').attr('font-weight', '700')
+      .attr('opacity', 0)
+      .text(d => d.company)
+      .transition().delay((_, i) => i * 180 + 600).duration(300)
+      .attr('opacity', d => (x(d.end) - x(d.start)) > 40 ? 1 : 0);
+
+    // tooltip
+    const tip = d3.select('body').append('div')
+      .style('position', 'fixed').style('background', '#1d2029')
+      .style('border', '1px solid #272c38').style('color', '#e8ecf4')
+      .style('font-family', "'JetBrains Mono', monospace").style('font-size', '11px')
+      .style('padding', '6px 12px').style('pointer-events', 'none')
+      .style('opacity', 0).style('z-index', 999).style('white-space', 'nowrap');
+
+    groups.select('rect')
+      .on('mousemove', (event, d) => {
+        const s = d3.timeFormat('%Y.%m')(d.start);
+        const e = d.company === '腾讯' ? '至今' : d3.timeFormat('%Y.%m')(d.end);
+        tip.style('opacity', 1)
+          .style('left', (event.clientX + 12) + 'px')
+          .style('top',  (event.clientY - 28) + 'px')
+          .html(`<strong>${d.company}</strong> &nbsp;${d.role}<br/><span style="color:#464e62">${s} — ${e}</span>`);
+      })
+      .on('mouseleave', () => tip.style('opacity', 0));
+  }
+
+  // ─────────────────────────────────────────────
+  // Animation orchestration
+  //
+  // 入场顺序：
+  // ① 0.1s   标题 + 副标题   同时出 (CSS)
+  // ② 0.6s   右侧联系信息    滑入   (CSS)
+  // ③ 1.0s   左侧导航 + 个人优势  同时出 (CSS sidebar / JS advantage)
+  // ④ 1.75s  工作经历淡入 + D3 时间轴绘制 + 竖向时间线
+  // ─────────────────────────────────────────────
+  const sections    = document.querySelectorAll('.section');
+  const navItems    = document.querySelectorAll('.nav-item');
+  const timelineEl  = document.getElementById('timeline');
+  let d3drawn = false;
+
+  function syncNav(id) {
+    navItems.forEach(n => n.classList.remove('active'));
+    const a = document.querySelector(`.nav-item[href="#${id}"]`);
+    if (a) a.classList.add('active');
+  }
+
+  window.addEventListener('load', () => {
+    // ③ advantage 与 sidebar 同步在 1.0s 出
+    setTimeout(() => {
+      const adv = document.getElementById('advantage');
+      if (adv) { adv.classList.add('visible'); syncNav('advantage'); }
+    }, 1000);
+
+    // ④ work section + D3 + 竖向时间线：advantage 过渡完成后（1.0 + 0.65s + buffer）
+    setTimeout(() => {
+      const work = document.getElementById('work');
+      if (work && !work.classList.contains('visible')) {
+        work.classList.add('visible');
+        syncNav('work');
+        if (!d3drawn) { d3drawn = true; drawD3Timeline(); }
+        setTimeout(() => timelineEl.classList.add('draw'), 300);
+      }
+    }, 1750);
+  });
+
+  // 滚动 observer — skills / education 由滚动触发；advantage / work 跳过（初始已处理）
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting) return;
+      const id = entry.target.id;
+      syncNav(id);
+      if (id === 'advantage' || id === 'work') return;
+      if (entry.target.classList.contains('visible')) return;
+      entry.target.classList.add('visible');
+      if (id === 'skills') {
+        entry.target.querySelectorAll('.tag').forEach((tag, i) =>
+          setTimeout(() => tag.classList.add('visible'), i * 45)
+        );
+      }
+    });
+  }, { threshold: 0.12 });
+
+  sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>
