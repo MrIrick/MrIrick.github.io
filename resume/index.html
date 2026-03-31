@@ -6,7 +6,7 @@
   <title>池海平 — Frontend Engineer</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500&family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&family=Syne:wght@400..800&display=swap" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
 
   <style>
@@ -201,6 +201,13 @@
     }
     .section.visible { opacity: 1; transform: translateY(0); }
 
+    /* 工作经历单独慢淡入 */
+    #work {
+      transition: opacity 1.4s cubic-bezier(0.16, 1, 0.3, 1), transform 1.4s cubic-bezier(0.16, 1, 0.3, 1);
+      transform: translateY(32px);
+    }
+    #work.visible { opacity: 1; transform: translateY(0); }
+
     /* advantage section slides from right, triggered by JS at 1.0s */
     #advantage {
       transform: translateX(32px);
@@ -234,6 +241,16 @@
     .adv-icon { font-size: 10px; color: var(--accent); letter-spacing: 0.1em; margin-bottom: 8px; opacity: 0.75; }
     .adv-text { color: var(--text-muted); font-size: 13px; line-height: 1.85; }
     .adv-text strong { color: var(--text); font-weight: 500; }
+
+    /* ── HOVER HIGHLIGHT — 橙色字体高亮 ── */
+    /* hl-block：整块 cursor:text，逐行高亮由 JS + CSS Highlight API 处理 */
+    .hl-block { cursor: text; }
+    /* CSS Custom Highlight API */
+    ::highlight(line-hover) { color: #d4713a; }
+    /* list li hover（单行，直接 CSS）*/
+    .list li { cursor: text; }
+    .list li:hover,
+    .list li:hover strong { color: #d4713a !important; transition: color 0.18s ease; }
 
     /* ── D3 TIMELINE ── */
     .d3-timeline-wrap {
@@ -285,9 +302,12 @@
     .job:nth-child(4)::before { transition-delay: 2.2s; }
 
     .job-header { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 2px; }
+    .job-header:hover .job-company { color: #d4713a !important; transition: color 0.22s ease; }
+    .job-header:hover .job-period  { color: #d4713a !important; opacity: 0.7; transition: color 0.22s ease; }
     .job-company { font-family: var(--sans); font-size: 16px; font-weight: 700; color: var(--text); letter-spacing: -0.01em; }
     .job-period { font-size: 12px; color: var(--text-muted); letter-spacing: 0.04em; }
-    .job-role { font-size: 11px; color: var(--accent); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 14px; opacity: 0.8; }
+    .job-role { font-size: 11px; color: var(--accent); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 14px; opacity: 0.8; transition: color 0.22s ease, opacity 0.22s ease; }
+    .job-role:hover { color: #d4713a !important; opacity: 1; }
     .job-section-label { font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-dim); margin: 14px 0 8px; }
 
     .list { list-style: none; display: flex; flex-direction: column; gap: 7px; }
@@ -321,7 +341,67 @@
     .edu-school { font-family: var(--sans); font-weight: 700; font-size: 15px; color: var(--text); margin-bottom: 4px; }
     .edu-detail { font-size: 12.5px; color: var(--text-muted); line-height: 2; }
 
-    /* ── KEYFRAMES ── */
+    /* ── SPRING DIVIDER ── */
+    .spring-divider {
+      position: relative;
+      height: 80px;
+      margin: 4px 0 24px;
+      overflow: visible;
+      cursor: grab;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+      opacity: 0;
+      transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .spring-divider.visible { opacity: 1; }
+    .spring-divider.dragging {
+      cursor: grabbing;
+    }
+    .spring-divider canvas {
+      position: absolute;
+      left: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 100%;
+      height: 62vh;   /* 动态由 JS resize 赋值 */
+      pointer-events: none;   /* canvas 永远不拦截事件 */
+    }
+    .spring-label {
+      position: relative;
+      z-index: 1;
+      font-size: 9px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .spring-divider:hover .spring-label { opacity: 1; }
+    /* 弹弦感应层：拖拽时才激活，默认隐藏 */
+    .spring-sense {
+      position: fixed;   /* fixed 脱离文档流，覆盖全屏 */
+      inset: 0;
+      cursor: grabbing;
+      z-index: 9999;
+      display: none;   /* 默认隐藏，不影响任何交互 */
+    }
+    .spring-sense.active { display: block; }
+
+
+
+    /* ── ELASTIC TEXT — 随弦振荡字重/缩放变化 ── */
+    .elastic-text {
+      transition: font-variation-settings 0.05s linear, transform 0.05s linear;
+      will-change: font-variation-settings, transform;
+    }
+    /* ── GRAVITY LAYER (mobile) ── */
+    .gravity-layer {
+      transition: transform 0.1s linear;
+      will-change: transform;
+    }
     @keyframes fadeIn { to { opacity: 1; } }
     @keyframes fadeSlideDown { to { opacity: 1; transform: translateY(0); } }
     @keyframes slideFromRight { to { opacity: 1; transform: translateX(0); } }
@@ -355,8 +435,8 @@
   <!-- HEADER -->
   <header class="header">
     <div class="header-left">
-      <h1 class="name">池<span>海</span>平</h1>
-      <div class="title-line">Senior Frontend Engineer &nbsp;·&nbsp; 14 yrs exp</div>
+      <h1 class="name elastic-text">池<span>海</span>平</h1>
+      <div class="title-line elastic-text">Senior Frontend Engineer &nbsp;·&nbsp; 14 yrs exp</div>
     </div>
     <div class="header-right">
       <div><div class="badge">OPEN TO WORK</div></div>
@@ -387,37 +467,44 @@
   <main class="main">
 
     <!-- 个人优势 -->
-    <section class="section" id="advantage">
+    <section class="section gravity-layer" id="advantage">
       <div class="section-header">
         <span class="section-num">01</span>
-        <h2 class="section-title">个人优势</h2>
+        <h2 class="section-title elastic-text">个人优势</h2>
         <div class="section-line"></div>
       </div>
       <div class="advantage-grid">
         <div class="adv-card">
-          <div class="adv-icon">// TECHNICAL</div>
-          <div class="adv-text"><strong>14 年全栈前端经验</strong>，覆盖 PC、H5、动态化、Node 中台等多端场景，熟悉现代工程化体系，具备从 0 到 1 建设大型前端项目的完整能力。</div>
+          <div class="adv-icon elastic-text">// TECHNICAL</div>
+          <div class="adv-text hl-block"><strong>14 年全栈前端经验</strong>，覆盖 PC、H5、动态化、Node 中台等多端场景，熟悉现代工程化体系，具备从 0 到 1 建设大型前端项目的完整能力。</div>
         </div>
         <div class="adv-card">
-          <div class="adv-icon">// AI + ENGINEERING</div>
-          <div class="adv-text">主导 <strong>AI Auto Coding</strong> 在数据中台的落地闭环，通过知识库补充、测试用例驱动与 Playwright 验证，实现 AI 辅助开发流程的可用性与可推广性。</div>
+          <div class="adv-icon elastic-text">// AI + ENGINEERING</div>
+          <div class="adv-text hl-block">主导 <strong>AI Auto Coding</strong> 在数据中台的落地闭环，通过知识库补充、测试用例驱动与 Playwright 验证，实现 AI 辅助开发流程的可用性与可推广性。</div>
         </div>
         <div class="adv-card">
-          <div class="adv-icon">// ARCHITECTURE</div>
-          <div class="adv-text">具备组件库从零搭建经验，独立完成 <strong>80%+ 通用组件</strong>开发；主导多次大型系统重构，兼顾技术选型、架构设计与核心模块落地。</div>
+          <div class="adv-icon elastic-text">// ARCHITECTURE</div>
+          <div class="adv-text hl-block">具备组件库从零搭建经验，独立完成 <strong>80%+ 通用组件</strong>开发；主导多次大型系统重构，兼顾技术选型、架构设计与核心模块落地。</div>
         </div>
         <div class="adv-card">
-          <div class="adv-icon">// COLLABORATION</div>
-          <div class="adv-text">跨团队沟通协调能力强，善于对齐产品、设计、后台多方资源，<strong>快速定位项目卡点</strong>，稳步推动需求落地交付。</div>
+          <div class="adv-icon elastic-text">// COLLABORATION</div>
+          <div class="adv-text hl-block">跨团队沟通协调能力强，善于对齐产品、设计、后台多方资源，<strong>快速定位项目卡点</strong>，稳步推动需求落地交付。</div>
         </div>
       </div>
     </section>
 
+    <!-- 弹簧分隔器：个人优势 → 工作经历 -->
+    <div class="spring-divider" id="spring-divider">
+      <div class="spring-sense" id="spring-sense"></div>
+      <canvas id="spring-canvas"></canvas>
+      <span class="spring-label">// hooke's law  F = −kx</span>
+    </div>
+
     <!-- 工作经历 -->
-    <section class="section" id="work">
+    <section class="section gravity-layer" id="work">
       <div class="section-header">
         <span class="section-num">02</span>
-        <h2 class="section-title">工作经历</h2>
+        <h2 class="section-title elastic-text">工作经历</h2>
         <div class="section-line"></div>
       </div>
 
@@ -431,7 +518,7 @@
       <div class="timeline" id="timeline">
         <div class="job">
           <div class="job-header">
-            <span class="job-company">腾讯</span>
+            <span class="job-company elastic-text">腾讯</span>
             <span class="job-period">2019.06 — 至今</span>
           </div>
           <div class="job-role">Senior Frontend Engineer · AData 数据中台</div>
@@ -453,7 +540,7 @@
 
         <div class="job">
           <div class="job-header">
-            <span class="job-company">新浪微博</span>
+            <span class="job-company elastic-text">新浪微博</span>
             <span class="job-period">2017.07 — 2019.06</span>
           </div>
           <div class="job-role">Frontend Engineer · 广告平台</div>
@@ -473,7 +560,7 @@
 
         <div class="job">
           <div class="job-header">
-            <span class="job-company">美团网</span>
+            <span class="job-company elastic-text">美团网</span>
             <span class="job-period">2016.12 — 2017.07</span>
           </div>
           <div class="job-role">Frontend Engineer · 配送 &amp; 外卖</div>
@@ -487,7 +574,7 @@
 
         <div class="job">
           <div class="job-header">
-            <span class="job-company">大连东软集团</span>
+            <span class="job-company elastic-text">大连东软集团</span>
             <span class="job-period">2012.07 — 2016.10</span>
           </div>
           <div class="job-role">Java Web Developer</div>
@@ -502,7 +589,7 @@
     <section class="section" id="skills">
       <div class="section-header">
         <span class="section-num">03</span>
-        <h2 class="section-title">技术栈</h2>
+        <h2 class="section-title elastic-text">技术栈</h2>
         <div class="section-line"></div>
       </div>
       <div class="skill-group">
@@ -550,7 +637,7 @@
     <section class="section" id="education">
       <div class="section-header">
         <span class="section-num">04</span>
-        <h2 class="section-title">教育背景</h2>
+        <h2 class="section-title elastic-text">教育背景</h2>
         <div class="section-line"></div>
       </div>
       <div class="edu-row">
@@ -570,9 +657,382 @@
 </div>
 
 <script>
-  // ─────────────────────────────────────────────
-  // D3 横向职业时间轴
-  // ─────────────────────────────────────────────
+  // ═══════════════════════════════════════════════════
+  // 1. PRETEXT — 预算各区块文字高度，消除动画布局抖动
+  // ═══════════════════════════════════════════════════
+  // pretextPreload removed
+
+  // ═══════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════
+  // 2. ELASTIC STRING — 单弧弹簧模型
+  //    拖拽 → 正弦半波弧形跟手
+  //    松手 → 阻尼简谐振动（A'' = -k·A），整体弧形来回弹
+  //    文字随振幅同步 scaleY 变形，弦+文字一体
+  //    hover: grab | drag: grabbing | 不点不动
+  // ═══════════════════════════════════════════════════
+  (function initElasticString() {
+    const divider  = document.getElementById('spring-divider');
+    const senseEl  = document.getElementById('spring-sense');
+    const canvas   = document.getElementById('spring-canvas');
+    const secAbove = document.getElementById('advantage');
+    const secBelow = document.getElementById('work');
+    if (!divider || !canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    let W = 0, H = 0;
+
+    // 弹簧参数
+    const K    = 0.045;   // 劲度系数（越大弹得越快）
+    const DAMP = 0.96;    // 阻尼（每帧速度乘此值，越小越快静）
+
+    // 单一控制量：弧形峰值 A（像素）
+    let A   = 0;   // 当前弧高
+    let vel = 0;   // A 的速度
+
+    let isDragging  = false;
+    let raf         = null;
+    let isAnimating = false;
+
+    // 懒查，load 后再收集
+    let elasticEls = [];
+  
+
+
+  // ── 逐行 hover 高亮（CSS Custom Highlight API）──
+  (function initLineHover() {
+    if (!CSS.highlights) return;  // 浏览器不支持则跳过
+
+    const highlightName = 'line-hover';
+    const hl = new Highlight();
+    CSS.highlights.set(highlightName, hl);
+
+    // 找一行内所有文本节点的 Range
+    function getLineRange(el, clientX, clientY) {
+      // caretRangeFromPoint：拿到鼠标位置对应的 caret
+      const caret = document.caretRangeFromPoint(clientX, clientY);
+      if (!caret) return null;
+
+      const node = caret.startContainer;
+      if (node.nodeType !== Node.TEXT_NODE) return null;
+      if (!el.contains(node)) return null;
+
+      const text = node.textContent;
+      const offset = caret.startOffset;
+
+      // 用 Range 二分找到这一行的左边界（向左扩展直到 top 变化）
+      let leftOffset = offset;
+      while (leftOffset > 0) {
+        const r = document.createRange();
+        r.setStart(node, leftOffset - 1);
+        r.setEnd(node, leftOffset);
+        const rect = r.getBoundingClientRect();
+        const caretRect = caret.getBoundingClientRect();
+        if (Math.abs(rect.top - caretRect.top) > 4) break;
+        leftOffset--;
+      }
+
+      // 向右扩展直到 top 变化或到文本末尾
+      let rightOffset = offset;
+      while (rightOffset < text.length) {
+        const r = document.createRange();
+        r.setStart(node, rightOffset);
+        r.setEnd(node, rightOffset + 1);
+        const rect = r.getBoundingClientRect();
+        const caretRect = caret.getBoundingClientRect();
+        if (Math.abs(rect.top - caretRect.top) > 4) break;
+        rightOffset++;
+      }
+
+      // 扩展到同行的其他文本节点（跨 <strong> 等内联元素）
+      // 用 el 内所有文本节点，找与当前行 top 相同的
+      const caretTop = caret.getBoundingClientRect().top;
+      const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+      const ranges = [];
+      let n;
+      while ((n = walker.nextNode())) {
+        if (n === node) {
+          const r = document.createRange();
+          r.setStart(n, leftOffset);
+          r.setEnd(n, rightOffset);
+          ranges.push(r);
+          continue;
+        }
+        if (!n.textContent.trim()) continue;
+        // 检查这个文本节点的第一个字符是否在同一行
+        const r = document.createRange();
+        r.setStart(n, 0);
+        r.setEnd(n, 1);
+        const rect = r.getBoundingClientRect();
+        if (Math.abs(rect.top - caretTop) <= 4) {
+          // 同行，加入全部
+          const full = document.createRange();
+          full.setStart(n, 0);
+          full.setEnd(n, n.textContent.length);
+          ranges.push(full);
+        }
+      }
+      return ranges;
+    }
+
+    document.querySelectorAll('.hl-block').forEach(el => {
+      el.addEventListener('mousemove', e => {
+        hl.clear();
+        const ranges = getLineRange(el, e.clientX, e.clientY);
+        if (ranges) ranges.forEach(r => hl.add(r));
+      });
+      el.addEventListener('mouseleave', () => hl.clear());
+    });
+  })();
+
+  window.addEventListener('load', () => {
+      elasticEls = Array.from(document.querySelectorAll('.elastic-text'));
+    });
+
+    function resize() {
+      W = canvas.width  = divider.clientWidth;
+      H = canvas.height = Math.round(window.innerHeight * 0.62);
+    }
+
+    // 根据 A 绘制整根弦（正弦半波）
+    function draw() {
+      ctx.clearRect(0, 0, W, H);
+      const cy = H / 2;
+
+      // 发光强度随振幅
+      const glow = Math.min(Math.abs(A) / 60, 1);
+
+      ctx.beginPath();
+      ctx.moveTo(0, cy);
+      const steps = 120;
+      for (let i = 0; i <= steps; i++) {
+        const t = i / steps;
+        const x = t * W;
+        const y = cy + A * Math.sin(Math.PI * t);  // 正弦半波
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.strokeStyle = `rgba(74,240,196,${0.42 + glow * 0.58})`;
+      ctx.lineWidth   = 1.5 + glow * 0.5;
+      ctx.shadowColor = '#4af0c4';
+      ctx.shadowBlur  = 2 + glow * 16;
+      ctx.stroke();
+      ctx.shadowBlur  = 0;
+
+      // 两端固定钉
+      ctx.fillStyle = `rgba(74,240,196,${0.4 + glow * 0.6})`;
+      [[0, cy], [W, cy]].forEach(([x, y]) => {
+        ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI * 2); ctx.fill();
+      });
+
+      // 拖拽时：弦中点画抓取指示
+      if (isDragging) {
+        ctx.beginPath();
+        ctx.arc(W / 2, cy + A, 5, 0, Math.PI * 2);
+        ctx.strokeStyle = 'rgba(74,240,196,0.7)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+
+      // ── 联动效果 ──
+      // section 上下漂浮（A 驱动，反向）
+      const drift = A * 0.22;
+      if (secAbove) secAbove.style.transform = `translateY(${drift}px)`;
+      if (secBelow) secBelow.style.transform = `translateY(${-drift * 0.7}px)`;
+
+      // 文字弹性变形：A > 0 拉伸时字纵向压扁，A < 0 反弹时纵向拉长
+      const scaleY = 1 - (A / (H * 2));   // 轻微，±2~3% 左右
+      const wght   = Math.round(400 + Math.abs(A) / 40 * 300);  // 400~700
+      const clampW = Math.min(700, Math.max(400, wght));
+      elasticEls.forEach(el => {
+        el.style.fontVariationSettings = `"wght" ${clampW}`;
+        el.style.transform = `scaleY(${scaleY.toFixed(4)})`;
+      });
+    }
+
+    // 阻尼简谐振动循环
+    function animateLoop() {
+      // F = -k * A（弹力朝零）
+      const force = -K * A;
+      vel = (vel + force) * DAMP;
+      A  += vel;
+
+      draw();
+
+      if (Math.abs(A) > 0.15 || Math.abs(vel) > 0.15) {
+        raf = requestAnimationFrame(animateLoop);
+      } else {
+        // 静止归位
+        A = 0; vel = 0;
+        draw();
+        isAnimating = false;
+        raf = null;
+        // section 和文字平滑还原
+        [secAbove, secBelow].forEach(el => {
+          if (!el) return;
+          el.style.transition = 'transform 0.6s ease';
+          el.style.transform  = 'translateY(0)';
+          setTimeout(() => { el.style.transition = ''; }, 700);
+        });
+        elasticEls.forEach(el => {
+          el.style.transition = 'font-variation-settings 0.6s ease, transform 0.6s ease';
+          el.style.fontVariationSettings = '"wght" 400';
+          el.style.transform = 'scaleY(1)';
+          setTimeout(() => { el.style.transition = ''; }, 700);
+        });
+      }
+    }
+
+    function startAnimate() {
+      if (raf) cancelAnimationFrame(raf);
+      isAnimating = true;
+      raf = requestAnimationFrame(animateLoop);
+    }
+
+    // 拖拽时：鼠标 Y 相对中心的偏移 → 直接设 A
+    function setAFromMouse(clientY) {
+      const rect = divider.getBoundingClientRect();
+      const cy   = rect.top + rect.height / 2;
+      // 限制最大拉伸：容器高度的 45%
+      A = Math.max(-window.innerHeight * 0.28, Math.min(window.innerHeight * 0.28, clientY - cy));
+      vel = 0;
+      draw();
+    }
+
+    // ── 鼠标事件 ──
+    // ── canvas mousedown（精确点到弦才触发）──
+    // ── 弦线命中检测（数学计算，canvas pointer-events:none）──
+    // 弦的形状：y(x) = cy + A * sin(π * x/W)
+    // 只有鼠标 Y 距离弦线 ≤ HIT_RADIUS 才算命中
+    const HIT_RADIUS = 10;  // px
+    let nearString = false;
+
+    function getStringY(clientX) {
+      const rect = divider.getBoundingClientRect();
+      const x = clientX - rect.left;
+      const cy = rect.top + rect.height / 2;
+      const t = Math.max(0, Math.min(1, x / W));
+      return cy + A * Math.sin(Math.PI * t);
+    }
+
+    document.addEventListener('mousemove', e => {
+      const stringY = getStringY(e.clientX);
+      const dist = Math.abs(e.clientY - stringY);
+      nearString = dist <= HIT_RADIUS;
+      // 只在弦线附近切换 cursor
+      document.body.style.cursor = nearString ? (isDragging ? 'grabbing' : 'grab') : '';
+    });
+
+    document.addEventListener('mousedown', e => {
+      if (!nearString) return;   // 不在弦线附近，完全忽略
+      e.preventDefault();
+      isDragging = true;
+      senseEl.classList.add('active');
+      if (raf) { cancelAnimationFrame(raf); raf = null; isAnimating = false; }
+      if (secAbove) secAbove.style.transition = 'none';
+      if (secBelow) secBelow.style.transition = 'none';
+      elasticEls.forEach(el => { el.style.transition = 'none'; });
+      setAFromMouse(e.clientY);
+    });
+
+    senseEl.addEventListener('mousemove', e => {
+      if (!isDragging) return;
+      setAFromMouse(e.clientY);
+    });
+
+    function endDrag() {
+      if (!isDragging) return;
+      isDragging = false;
+      dragIdx = -1;
+      senseEl.classList.remove('active');
+      document.body.style.cursor = '';
+      vel = -A * 0.12;
+      startAnimate();
+    }
+    senseEl.addEventListener('mouseup', endDrag);
+    window.addEventListener('mouseup', endDrag);
+
+    // ── 触摸（canvas touchstart + 命中检测）──
+    canvas.addEventListener('touchstart', e => {
+      const touch = e.touches[0];
+      const stringY = getStringY(touch.clientX);
+      if (Math.abs(touch.clientY - stringY) > HIT_RADIUS * 2) return;  // 没碰到弦
+      e.preventDefault();
+      isDragging = true;
+      senseEl.classList.add('active');
+      if (raf) { cancelAnimationFrame(raf); raf = null; isAnimating = false; }
+      if (secAbove) secAbove.style.transition = 'none';
+      if (secBelow) secBelow.style.transition = 'none';
+      elasticEls.forEach(el => { el.style.transition = 'none'; });
+      setAFromMouse(touch.clientY);
+    }, { passive: false });
+
+    canvas.addEventListener('touchmove', e => {
+      e.preventDefault();
+      if (!isDragging) return;
+      setAFromMouse(e.touches[0].clientY);
+    }, { passive: false });
+
+    canvas.addEventListener('touchend', () => {
+      if (!isDragging) return;
+      isDragging = false;
+      senseEl.classList.remove('active');
+      vel = -A * 0.12;
+      startAnimate();
+    });
+
+    window.addEventListener('resize', resize);
+    resize();
+    draw();  // 初始静弦
+  })();
+
+  // 3. GRAVITY PARALLAX — 移动端重力感应视差
+  // ═══════════════════════════════════════════════════
+  (function initGravity() {
+    const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+    if (!isMobile) return;
+
+    const layers = document.querySelectorAll('.gravity-layer');
+    let permissionAsked = false;
+
+    function applyGravity(beta, gamma) {
+      // beta: 前后倾斜 -180~180，gamma: 左右倾斜 -90~90
+      const tiltX = Math.max(-20, Math.min(20, gamma));  // 左右
+      const tiltY = Math.max(-20, Math.min(20, beta - 45)); // 前后（减去手持基准角）
+
+      layers.forEach((el, i) => {
+        const depth = (i % 2 === 0) ? 1 : -1; // 奇偶层反向，产生层次感
+        const dx = tiltX * depth * 0.35;
+        const dy = tiltY * depth * 0.2;
+        el.style.transform = `translate(${dx}px, ${dy}px)`;
+      });
+    }
+
+    function startListening() {
+      window.addEventListener('deviceorientation', e => {
+        applyGravity(e.beta ?? 0, e.gamma ?? 0);
+      });
+    }
+
+    // iOS 13+ 需要显式请求权限
+    if (typeof DeviceOrientationEvent !== 'undefined' &&
+        typeof DeviceOrientationEvent.requestPermission === 'function') {
+      // 用户首次触摸时请求
+      document.addEventListener('touchstart', function askOnce() {
+        if (permissionAsked) return;
+        permissionAsked = true;
+        DeviceOrientationEvent.requestPermission()
+          .then(state => { if (state === 'granted') startListening(); })
+          .catch(() => {});
+        document.removeEventListener('touchstart', askOnce);
+      }, { once: true });
+    } else {
+      startListening();
+    }
+  })();
+
+  // ═══════════════════════════════════════════════════
+  // 4. D3 横向职业时间轴
+  // ═══════════════════════════════════════════════════
   const jobs = [
     { company: '东软', role: 'Java Dev',     start: new Date('2012-07-01'), end: new Date('2016-10-01'), color: '#464e62' },
     { company: '美团', role: 'Frontend',     start: new Date('2016-12-01'), end: new Date('2017-07-01'), color: '#5a6478' },
@@ -590,82 +1050,57 @@
 
     const svg = d3.select('#d3-timeline').append('svg').attr('width', W).attr('height', H);
 
-    // axis
     svg.append('g')
       .attr('transform', `translate(0,${barY + barH + 6})`)
-      .call(
-        d3.axisBottom(x)
-          .ticks(d3.timeYear.every(2))
-          .tickFormat(d3.timeFormat('%Y'))
-          .tickSize(4)
-      )
+      .call(d3.axisBottom(x).ticks(d3.timeYear.every(2)).tickFormat(d3.timeFormat('%Y')).tickSize(4))
       .call(g => {
         g.select('.domain').attr('stroke', '#272c38');
         g.selectAll('.tick line').attr('stroke', '#272c38');
-        g.selectAll('.tick text')
-          .attr('fill', '#464e62')
-          .attr('font-family', "'JetBrains Mono', monospace")
-          .attr('font-size', '10px');
+        g.selectAll('.tick text').attr('fill', '#464e62').attr('font-family', "'JetBrains Mono', monospace").attr('font-size', '10px');
       });
 
-    // bars
     const groups = svg.selectAll('.job-bar').data(jobs).enter().append('g').attr('class', 'job-bar');
 
     groups.append('rect')
-      .attr('x', d => x(d.start))
-      .attr('y', barY)
-      .attr('width', 0)
-      .attr('height', barH)
-      .attr('fill', d => d.color)
-      .attr('opacity', d => d.company === '腾讯' ? 0.9 : 0.38)
-      .attr('rx', 2)
+      .attr('x', d => x(d.start)).attr('y', barY).attr('width', 0).attr('height', barH)
+      .attr('fill', d => d.color).attr('opacity', d => d.company === '腾讯' ? 0.9 : 0.38).attr('rx', 2)
       .transition().duration(1000).delay((_, i) => i * 180).ease(d3.easeCubicOut)
       .attr('width', d => Math.max(x(d.end) - x(d.start) - 2, 0));
 
     groups.append('text')
-      .attr('x', d => x(d.start) + 7)
-      .attr('y', barY + barH / 2 + 1)
-      .attr('dominant-baseline', 'middle')
+      .attr('x', d => x(d.start) + 7).attr('y', barY + barH / 2 + 1).attr('dominant-baseline', 'middle')
       .attr('fill', d => d.company === '腾讯' ? '#111318' : '#8b93a8')
-      .attr('font-family', "'Syne', sans-serif")
-      .attr('font-size', '11px').attr('font-weight', '700')
-      .attr('opacity', 0)
-      .text(d => d.company)
+      .attr('font-family', "'Syne', sans-serif").attr('font-size', '11px').attr('font-weight', '700')
+      .attr('opacity', 0).text(d => d.company)
       .transition().delay((_, i) => i * 180 + 600).duration(300)
       .attr('opacity', d => (x(d.end) - x(d.start)) > 40 ? 1 : 0);
 
-    // tooltip
     const tip = d3.select('body').append('div')
-      .style('position', 'fixed').style('background', '#1d2029')
-      .style('border', '1px solid #272c38').style('color', '#e8ecf4')
-      .style('font-family', "'JetBrains Mono', monospace").style('font-size', '11px')
-      .style('padding', '6px 12px').style('pointer-events', 'none')
-      .style('opacity', 0).style('z-index', 999).style('white-space', 'nowrap');
+      .style('position', 'fixed').style('background', '#1d2029').style('border', '1px solid #272c38')
+      .style('color', '#e8ecf4').style('font-family', "'JetBrains Mono', monospace").style('font-size', '11px')
+      .style('padding', '6px 12px').style('pointer-events', 'none').style('opacity', 0)
+      .style('z-index', 999).style('white-space', 'nowrap');
 
     groups.select('rect')
       .on('mousemove', (event, d) => {
         const s = d3.timeFormat('%Y.%m')(d.start);
         const e = d.company === '腾讯' ? '至今' : d3.timeFormat('%Y.%m')(d.end);
-        tip.style('opacity', 1)
-          .style('left', (event.clientX + 12) + 'px')
-          .style('top',  (event.clientY - 28) + 'px')
+        tip.style('opacity', 1).style('left', (event.clientX + 12) + 'px').style('top', (event.clientY - 28) + 'px')
           .html(`<strong>${d.company}</strong> &nbsp;${d.role}<br/><span style="color:#464e62">${s} — ${e}</span>`);
       })
       .on('mouseleave', () => tip.style('opacity', 0));
   }
 
-  // ─────────────────────────────────────────────
-  // Animation orchestration
-  //
-  // 入场顺序：
-  // ① 0.1s   标题 + 副标题   同时出 (CSS)
-  // ② 0.6s   右侧联系信息    滑入   (CSS)
-  // ③ 1.0s   左侧导航 + 个人优势  同时出 (CSS sidebar / JS advantage)
-  // ④ 1.75s  工作经历淡入 + D3 时间轴绘制 + 竖向时间线
-  // ─────────────────────────────────────────────
-  const sections    = document.querySelectorAll('.section');
-  const navItems    = document.querySelectorAll('.nav-item');
-  const timelineEl  = document.getElementById('timeline');
+  // ═══════════════════════════════════════════════════
+  // 5. 入场动画编排
+  // ① 0.1s  标题 + 副标题  (CSS)
+  // ② 0.6s  右侧联系信息   (CSS)
+  // ③ 1.0s  左侧导航 + 个人优势  (CSS + JS)
+  // ④ 1.75s 工作经历 + D3 + 竖向时间线
+  // ═══════════════════════════════════════════════════
+  const sections   = document.querySelectorAll('.section');
+  const navItems   = document.querySelectorAll('.nav-item');
+  const timelineEl = document.getElementById('timeline');
   let d3drawn = false;
 
   function syncNav(id) {
@@ -674,14 +1109,107 @@
     if (a) a.classList.add('active');
   }
 
+
+
+
+  // ── 逐行 hover 高亮（CSS Custom Highlight API）──
+  (function initLineHover() {
+    if (!CSS.highlights) return;  // 浏览器不支持则跳过
+
+    const highlightName = 'line-hover';
+    const hl = new Highlight();
+    CSS.highlights.set(highlightName, hl);
+
+    // 找一行内所有文本节点的 Range
+    function getLineRange(el, clientX, clientY) {
+      // caretRangeFromPoint：拿到鼠标位置对应的 caret
+      const caret = document.caretRangeFromPoint(clientX, clientY);
+      if (!caret) return null;
+
+      const node = caret.startContainer;
+      if (node.nodeType !== Node.TEXT_NODE) return null;
+      if (!el.contains(node)) return null;
+
+      const text = node.textContent;
+      const offset = caret.startOffset;
+
+      // 用 Range 二分找到这一行的左边界（向左扩展直到 top 变化）
+      let leftOffset = offset;
+      while (leftOffset > 0) {
+        const r = document.createRange();
+        r.setStart(node, leftOffset - 1);
+        r.setEnd(node, leftOffset);
+        const rect = r.getBoundingClientRect();
+        const caretRect = caret.getBoundingClientRect();
+        if (Math.abs(rect.top - caretRect.top) > 4) break;
+        leftOffset--;
+      }
+
+      // 向右扩展直到 top 变化或到文本末尾
+      let rightOffset = offset;
+      while (rightOffset < text.length) {
+        const r = document.createRange();
+        r.setStart(node, rightOffset);
+        r.setEnd(node, rightOffset + 1);
+        const rect = r.getBoundingClientRect();
+        const caretRect = caret.getBoundingClientRect();
+        if (Math.abs(rect.top - caretRect.top) > 4) break;
+        rightOffset++;
+      }
+
+      // 扩展到同行的其他文本节点（跨 <strong> 等内联元素）
+      // 用 el 内所有文本节点，找与当前行 top 相同的
+      const caretTop = caret.getBoundingClientRect().top;
+      const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+      const ranges = [];
+      let n;
+      while ((n = walker.nextNode())) {
+        if (n === node) {
+          const r = document.createRange();
+          r.setStart(n, leftOffset);
+          r.setEnd(n, rightOffset);
+          ranges.push(r);
+          continue;
+        }
+        if (!n.textContent.trim()) continue;
+        // 检查这个文本节点的第一个字符是否在同一行
+        const r = document.createRange();
+        r.setStart(n, 0);
+        r.setEnd(n, 1);
+        const rect = r.getBoundingClientRect();
+        if (Math.abs(rect.top - caretTop) <= 4) {
+          // 同行，加入全部
+          const full = document.createRange();
+          full.setStart(n, 0);
+          full.setEnd(n, n.textContent.length);
+          ranges.push(full);
+        }
+      }
+      return ranges;
+    }
+
+    document.querySelectorAll('.hl-block').forEach(el => {
+      el.addEventListener('mousemove', e => {
+        hl.clear();
+        const ranges = getLineRange(el, e.clientX, e.clientY);
+        if (ranges) ranges.forEach(r => hl.add(r));
+      });
+      el.addEventListener('mouseleave', () => hl.clear());
+    });
+  })();
+
   window.addEventListener('load', () => {
-    // ③ advantage 与 sidebar 同步在 1.0s 出
     setTimeout(() => {
       const adv = document.getElementById('advantage');
       if (adv) { adv.classList.add('visible'); syncNav('advantage'); }
     }, 1000);
 
-    // ④ work section + D3 + 竖向时间线：advantage 过渡完成后（1.0 + 0.65s + buffer）
+    // 弦在 advantage 动画完成后淡入（1.0s delay + 1.4s transition + 0.2s buffer）
+    setTimeout(() => {
+      const divider = document.getElementById('spring-divider');
+      if (divider) divider.classList.add('visible');
+    }, 2600);
+
     setTimeout(() => {
       const work = document.getElementById('work');
       if (work && !work.classList.contains('visible')) {
@@ -693,7 +1221,6 @@
     }, 1750);
   });
 
-  // 滚动 observer — skills / education 由滚动触发；advantage / work 跳过（初始已处理）
   const observer = new IntersectionObserver(entries => {
     entries.forEach(entry => {
       if (!entry.isIntersecting) return;
@@ -711,6 +1238,7 @@
   }, { threshold: 0.12 });
 
   sections.forEach(s => observer.observe(s));
+
 </script>
 </body>
 </html>
